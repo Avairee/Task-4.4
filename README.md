@@ -44,3 +44,8 @@ Your redesign should support the scenario above without removing or weakening th
 **Submit:** the modified React files, before/after screenshots, three brief justifications, and one example of an AI design suggestion you refined or rejected.
 
 **Evaluation:** We assess usability reasoning, design consistency, preserved functionality, and testing. Using AI is allowed and expected. Cosmetic changes alone are not sufficient.
+
+## Rescue challenge deliverables
+
+- [UX rescue notes](UX_RESCUE_NOTES.md) - user goal, three problem/solution justifications, the AI suggestion we refined, and verification notes.
+- [Before screenshot](screenshots/before.png) and [after screenshot](screenshots/after.png) - the board before and after the redesign.
