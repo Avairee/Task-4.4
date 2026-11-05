@@ -52,6 +52,7 @@ export default function App() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [viewStatus, setViewStatus] = useState('all');
   const [current, setCurrent] = useState(null);
   const [form, setForm] = useState(clean);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -62,11 +63,18 @@ export default function App() {
 
   const filtered = useMemo(() => items.filter((item) => (
     (cat === 'all' || item.category === cat)
+    && (viewStatus === 'all' || item.status === viewStatus)
     && (filterStatus === 'all' || item.status === filterStatus)
     && `${item.title} ${item.location} ${item.description}`.toLowerCase().includes(q.toLowerCase())
-  )), [items, q, cat, filterStatus]);
+  )), [items, q, cat, filterStatus, viewStatus]);
 
+  const displayStatus = viewStatus !== 'all' ? viewStatus : filterStatus;
   const hasActiveFilters = Boolean(q.trim() || cat !== 'all' || filterStatus !== 'all');
+  const boardColumns = [
+    { key: 'lost', title: 'LOST', sub: 'Searching for these things', icon: '↗' },
+    { key: 'found', title: 'FOUND', sub: 'Looking for the owners', icon: '⌁' },
+    { key: 'claimed', title: 'CLAIMED', sub: 'Back where they belong', icon: '✓' },
+  ].filter((column) => displayStatus === 'all' || column.key === displayStatus);
 
   function clearFilters() {
     setQ('');
@@ -75,7 +83,8 @@ export default function App() {
   }
 
   function showStatus(status) {
-    setFilterStatus(status);
+    setViewStatus(status);
+    setFilterStatus('all');
     setPage('board');
     setMessage('');
   }
@@ -128,6 +137,7 @@ export default function App() {
 
   function reset() {
     setItems(seed);
+    setViewStatus('all');
     clearFilters();
     setMessage('Example reports restored.');
   }
@@ -142,13 +152,13 @@ export default function App() {
       <header className="header">
         <div className="headline">
           <span className="sun" aria-hidden="true">✳</span>
-          <button onClick={() => { clearFilters(); setPage('board'); }} className="wordmark">FOUND<span>on campus</span></button>
+          <button onClick={() => { setViewStatus('all'); clearFilters(); setPage('board'); }} className="wordmark">FOUND<span>on campus</span></button>
           <p>Community noticeboard</p>
         </div>
         <nav className="header-links" aria-label="Noticeboard views">
-          <button className={filterStatus === 'all' && page === 'board' ? 'active' : ''} onClick={() => { clearFilters(); setPage('board'); }}>Noticeboard</button>
-          <button className={filterStatus === 'lost' ? 'active' : ''} onClick={() => showStatus('lost')}>Missing items</button>
-          <button className={filterStatus === 'found' ? 'active' : ''} onClick={() => showStatus('found')}>Recently found</button>
+          <button className={viewStatus === 'all' && page === 'board' ? 'active' : ''} onClick={() => { setViewStatus('all'); clearFilters(); setPage('board'); }}>Noticeboard</button>
+          <button className={viewStatus === 'lost' ? 'active' : ''} onClick={() => showStatus('lost')}>Missing items</button>
+          <button className={viewStatus === 'found' ? 'active' : ''} onClick={() => showStatus('found')}>Recently found</button>
         </nav>
         <button className="report-button" onClick={create}>+ Post a report</button>
       </header>
@@ -174,14 +184,10 @@ export default function App() {
           </aside>
 
           <section className="board">
-            <div className="board-top"><div><p className="kicker">CAMPUS COMMUNITY</p><h2>Latest notices <span>({filtered.length})</span></h2></div><span className="time-note">Updated today</span></div>
+            <div className="board-top"><div><p className="kicker">CAMPUS COMMUNITY</p><h2>{viewStatus === 'lost' ? 'Missing items' : viewStatus === 'found' ? 'Recently found' : filterStatus !== 'all' ? `${cap(filterStatus)} reports` : 'Latest notices'} <span>({filtered.length})</span></h2></div><span className="time-note">Updated today</span></div>
             {hasActiveFilters && <div className="active-filters" aria-label="Active filters"><span>Showing filtered results</span>{q.trim() && <button onClick={() => setQ('')}>Search: “{q.trim()}” ×</button>}{cat !== 'all' && <button onClick={() => setCat('all')}>Category: {cap(cat)} ×</button>}{filterStatus !== 'all' && <button onClick={() => setFilterStatus('all')}>Status: {cap(filterStatus)} ×</button>}</div>}
             {message && <div className="message" role="status">{message}<button aria-label="Dismiss message" onClick={() => setMessage('')}>×</button></div>}
-            <div className="board-grid">{[
-              { key: 'lost', title: 'LOST', sub: 'Searching for these things', icon: '↗' },
-              { key: 'found', title: 'FOUND', sub: 'Looking for the owners', icon: '⌁' },
-              { key: 'claimed', title: 'CLAIMED', sub: 'Back where they belong', icon: '✓' },
-            ].map((column) => {
+            <div className={`board-grid ${displayStatus !== 'all' ? 'single-column-view' : ''}`}>{boardColumns.map((column) => {
               const reports = filtered.filter((item) => item.status === column.key);
               return <div className="board-column" key={column.key}>
                 <div className="column-head"><span className={`col-icon ${column.key}`} aria-hidden="true">{column.icon}</span><div><strong>{column.title}</strong><small>{column.sub}</small></div><span className="col-count">{reports.length}</span></div>
@@ -201,11 +207,11 @@ export default function App() {
           <div className="report-layout"><div className="report-intro"><span className="seal" aria-hidden="true">✳</span><p className="kicker">HELP THE COMMUNITY</p><h1>{current ? 'Update your report.' : 'Tell us what happened.'}</h1><p>Small details can help someone recognize their belongings.</p><div className="paper-note">Your report will appear on the public campus noticeboard with the details you provide.</div></div>
             <section className="form-paper"><header><p>{current ? 'EDIT NOTICE / FORM 01' : 'NEW NOTICE / FORM 01'}</p><h2>{current ? 'Edit report' : 'Report an item'}</h2><span className="required-note">* Required fields</span></header>
               <form onSubmit={submit} noValidate>
-                <label>Item title <b>*</b><input {...fieldProps('title')} required value={form.title} onChange={(event) => setForm((state) => ({ ...state, title: event.target.value }))} placeholder="e.g., Black backpack" />{fieldErrors.title && <span className="field-error" id="title-error">{fieldErrors.title}</span>}</label>
-                <label>Status <b>*</b><select {...fieldProps('status')} required value={form.status} onChange={(event) => setForm((state) => ({ ...state, status: event.target.value }))}><option value="">Choose one</option>{statuses.map((status) => <option key={status} value={status}>{cap(status)}</option>)}</select>{fieldErrors.status && <span className="field-error" id="status-error">{fieldErrors.status}</span>}</label>
-                <label>Category <b>*</b><select {...fieldProps('category')} required value={form.category} onChange={(event) => setForm((state) => ({ ...state, category: event.target.value }))}><option value="">Select item category</option>{categories.slice(1).map((category) => <option key={category} value={category}>{cap(category)}</option>)}</select>{fieldErrors.category && <span className="field-error" id="category-error">{fieldErrors.category}</span>}</label>
-                <label>Last known location<input {...fieldProps('location')} value={form.location} onChange={(event) => setForm((state) => ({ ...state, location: event.target.value }))} placeholder="Location (optional)" />{fieldErrors.location && <span className="field-error" id="location-error">{fieldErrors.location}</span>}</label>
-                <label>More details<textarea rows="6" value={form.description} onChange={(event) => setForm((state) => ({ ...state, description: event.target.value }))} placeholder="Describe your item" /></label>
+                <label><span>Item title <b>*</b></span><input {...fieldProps('title')} required value={form.title} onChange={(event) => setForm((state) => ({ ...state, title: event.target.value }))} placeholder="e.g., Black backpack" />{fieldErrors.title && <span className="field-error" id="title-error">{fieldErrors.title}</span>}</label>
+                <label><span>Status <b>*</b></span><select {...fieldProps('status')} required value={form.status} onChange={(event) => setForm((state) => ({ ...state, status: event.target.value }))}><option value="">Choose one</option>{statuses.map((status) => <option key={status} value={status}>{cap(status)}</option>)}</select>{fieldErrors.status && <span className="field-error" id="status-error">{fieldErrors.status}</span>}</label>
+                <label><span>Category <b>*</b></span><select {...fieldProps('category')} required value={form.category} onChange={(event) => setForm((state) => ({ ...state, category: event.target.value }))}><option value="">Select item category</option>{categories.slice(1).map((category) => <option key={category} value={category}>{cap(category)}</option>)}</select>{fieldErrors.category && <span className="field-error" id="category-error">{fieldErrors.category}</span>}</label>
+                <label><span>Last known location</span><input {...fieldProps('location')} value={form.location} onChange={(event) => setForm((state) => ({ ...state, location: event.target.value }))} placeholder="Location (optional)" />{fieldErrors.location && <span className="field-error" id="location-error">{fieldErrors.location}</span>}</label>
+                <label><span>More details</span><textarea rows="6" value={form.description} onChange={(event) => setForm((state) => ({ ...state, description: event.target.value }))} placeholder="Describe your item" /></label>
                 {Object.keys(fieldErrors).length > 0 && <div className="form-error" role="alert">Please fix the highlighted fields before publishing.</div>}
                 <div className="form-actions"><button type="button" onClick={() => setPage('board')}>Go back</button><button className="report-button" type="submit">{current ? 'Save report' : 'Publish notice'}</button></div>
               </form>

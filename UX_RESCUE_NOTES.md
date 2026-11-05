@@ -26,6 +26,10 @@ The original cards showed category and an unlabeled metadata sentence. A found i
 
 **Change:** each card now has a visible Lost, Found, or Claimed badge. Found reports use a distinct handover panel with explicit states: `Ready to recover`, `Reported only`, or `Reunited`, plus the collection point or the reason the item is not yet confirmed.
 
+## Follow-up navigation and layout refinement
+
+The header shortcuts now act as scoped views: `Missing items` renders only lost reports, while `Recently found` renders only found reports. The general Noticeboard view still shows all three stages. Search and filter controls now sit centered above the board so they appear before the results they control instead of competing with the board in a left rail.
+
 ## AI design suggestion considered
 
 AI suggested moving all filters into a modal or mobile drawer. That would reduce desktop density, but it would hide the most common search controls and add an extra step to the core "find a match" task. I kept the existing sidebar for desktop, added a live result summary and removable chips, and retained the same controls at mobile widths. This preserves capability while improving discoverability and recovery.
